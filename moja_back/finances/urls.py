@@ -10,4 +10,5 @@ urlpatterns = [
   path('savings/', views.savings_list),
   path('savings/save/', views.save_savings),
   path('savings/detail/<int:pk>/', views.savings_detail),
+  path('recommend/', views.recommend),
 ]
