@@ -59,11 +59,11 @@ def save_prdt(request):
             spcl_cnd = val.get('spcl_cnd')
             mtrt_int = val.get('mtrt_int')
             if val.get('join_deny') == '1':
-              join_deny = '제한없음'
+                join_deny = '제한없음'
             elif val.get('join_deny') == '2':
-              join_deny = '서민전용'
+                join_deny = '서민전용'
             elif val.get('join_deny') == '3':
-              join_deny = '일부제한'
+                join_deny = '일부제한'
             join_member = val.get('join_member')
             etc_note = val.get('etc_note')
             max_limit = val.get('max_limit')
@@ -122,11 +122,11 @@ def save_savings(request):
             spcl_cnd = val.get('spcl_cnd')
             mtrt_int = val.get('mtrt_int')
             if val.get('join_deny') == '1':
-              join_deny = '제한없음'
+                join_deny = '제한없음'
             elif val.get('join_deny') == '2':
-              join_deny = '서민전용'
+                join_deny = '서민전용'
             elif val.get('join_deny') == '3':
-              join_deny = '일부제한'
+                join_deny = '일부제한'
             join_member = val.get('join_member')
             etc_note = val.get('etc_note')
             max_limit = val.get('max_limit')
@@ -185,6 +185,41 @@ def prdt_list(request):
 
 @api_view(['GET'])
 def prdt_detail(request, pk):
+    product = Product.objects.get(pk = pk)
+    
+    serializer = ProductDetailSerializer(product)
+
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def prdt_list(request):
+    product_category = ProductCategory.objects.get(pk = 1)
+    products = Product.objects.filter(product_category=product_category)
+    
+    serializer = ProductListSerializer(products, many = True)
+
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def prdt_detail(request, pk):
+    product = Product.objects.get(pk = pk)
+    
+    serializer = ProductDetailSerializer(product)
+
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def savings_list(request):
+    product_category = ProductCategory.objects.get(pk = 2)
+    products = Product.objects.filter(product_category=product_category)
+    
+    serializer = ProductListSerializer(products, many = True)
+
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def savings_detail(request, pk):
     product = Product.objects.get(pk = pk)
     
     serializer = ProductDetailSerializer(product)
