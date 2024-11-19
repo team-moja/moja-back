@@ -11,7 +11,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, get_list_or_404
 
 from .models import Bank, Product, ProductCategory, ProductOption
-from .serializers import BankListSerializer
+from .serializers import BankListSerializer, ProductListSerializer, ProductDetailSerializer
 
 # Create your views here.
 API_KEY = settings.BANK_API_KEY
@@ -173,3 +173,20 @@ def save_savings(request):
     else:
         data = {'error': '은행 정보를 가져오는 데 실패했습니다.'}
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def prdt_list(request):
+    product_category = ProductCategory.objects.get(pk = 1)
+    products = Product.objects.filter(product_category=product_category)
+    
+    serializer = ProductListSerializer(products, many = True)
+
+    return Response(serializer.data)
+
+@api_view(['GET'])
+def prdt_detail(request, pk):
+    product = Product.objects.get(pk = pk)
+    
+    serializer = ProductDetailSerializer(product)
+
+    return Response(serializer.data)
