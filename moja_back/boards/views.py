@@ -5,11 +5,14 @@ from django.shortcuts import get_object_or_404
 from .models import HelpArticle, HelpLike, HelpComment
 from .serializers import HelpArticleSerializer, HelpLikeSerializer, HelpCommentSerializer
 from accounts.models import User
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 
 ################################################
 # 질문 게시판
 # 질문 게시판 글 리스트 및 생성
 @api_view(['GET', 'POST'])
+# @permission_classes([IsAuthenticated])
 def help_article_list(request):
     if request.method == 'GET':
         articles = HelpArticle.objects.all()
@@ -19,10 +22,12 @@ def help_article_list(request):
     elif request.method == 'POST':
         serializer = HelpArticleSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save(user=request.user)
-            # admin_user = User.objects.filter(username="admin").first()
-            # serializer.save(user=admin_user)
+            print("유효성 검사 통과")
+            # serializer.save(user=request.user)
+            admin_user = User.objects.filter(username="admin").first()
+            serializer.save(user=admin_user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        print("유효성 검사 실패", serializer.data)
 
 
 # 질문 게시판 글 상세 조회, 수정 및 삭제
