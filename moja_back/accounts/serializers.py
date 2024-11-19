@@ -37,3 +37,10 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'nickname', 'user_point', 'rank',)
+
+class UserModifySerializer(serializers.ModelSerializer):
+    rank = UserRankSerializer()
+    
+    class Meta:
+        model = User
+        fields = '__all__'
