@@ -55,13 +55,13 @@ SITE_ID = 1
 
 REST_FRAMEWORK = {
     # Authentication
-    'DEFAULT_AUTHENTICATION_CLASSES': {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
-    },
+    ],
     # permission
-    'DEFAULT_PERMISSION_CLASSES': {
+    'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
-    },
+    ],
 }
 
 MIDDLEWARE = [
@@ -75,10 +75,10 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = {
+CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://localhost:5173',
-}
+]
 
 ROOT_URLCONF = 'moja_back.urls'
 
@@ -154,3 +154,19 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.User'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# 네이버 SMTP 서버 설정
+EMAIL_HOST = 'smtp.naver.com'  # 네이버 SMTP 서버
+EMAIL_PORT = 587  # TLS 포트
+EMAIL_USE_TLS = True  # TLS 암호화 사용
+EMAIL_HOST_USER = 'wodms6199@naver.com'  # 네이버 이메일 주소
+EMAIL_HOST_PASSWORD = '6P3F6HT4PK6R'  # 네이버 계정 비밀번호 또는 앱 비밀번호
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # 기본 발신 이메일 주소
+
+ACCOUNT_ADAPTER  = 'accounts.models.CustomAccountAdapter'
+
+REST_AUTH = {
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
+}
