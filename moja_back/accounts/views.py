@@ -7,18 +7,23 @@ from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 from django.shortcuts import get_object_or_404, get_list_or_404
 
-from .serializers import UserDetailSerializer, UserListSerializer
+from .serializers import UserDetailSerializer, UserListSerializer, UserModifySerializer
 from .models import User
 
 
 # Create your views here.
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 def user_detail(request, pk):
+    user = get_object_or_404(User, pk=pk)
     if request.method == 'GET':
-        user = User.objects.get(pk = pk)
         serializer = UserDetailSerializer(user)
         return Response(serializer.data)
-    
+    elif request.method == 'PUT':
+        serializer = UserModifySerializer(user, data = request.data, partial = True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
+
 @api_view(['GET'])
 def user_list(request):
     if request.method == 'GET':
