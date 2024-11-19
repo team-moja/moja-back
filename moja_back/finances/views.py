@@ -11,6 +11,7 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404, get_list_or_404
 
 from .models import Bank
+from .serializers import BankListSerializer
 
 # Create your views here.
 @api_view(['GET'])
@@ -35,3 +36,9 @@ def save_banks(request):
     else:
         data = {'error': '은행 정보를 가져오는 데 실패했습니다.'}
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET'])
+def bank_list(request):
+    banks = Bank.objects.all()
+    serializer = BankListSerializer(banks, many = True)
+
+    return Response(serializer.data)
