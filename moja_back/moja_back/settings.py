@@ -11,10 +11,20 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import environ
+import os
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env(DEBUG=(bool, True))
+environ.Env.read_env(env_file = os.path.join(BASE_DIR, '.env'))
+
+
+EMAIL = env('EMAIL') #SECEREY_KEY 값 불러오기
+EMAIL_PWD = env('EMAIL_PWD') #SECEREY_KEY 값 불러오기
+DEBUG = env('DEBUG') #DEBUG 값 불러오기
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -161,8 +171,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.naver.com'  # 네이버 SMTP 서버
 EMAIL_PORT = 587  # TLS 포트
 EMAIL_USE_TLS = True  # TLS 암호화 사용
-EMAIL_HOST_USER = 'wodms6199@naver.com'  # 네이버 이메일 주소
-EMAIL_HOST_PASSWORD = '6P3F6HT4PK6R'  # 네이버 계정 비밀번호 또는 앱 비밀번호
+EMAIL_HOST_USER = EMAIL  # 네이버 이메일 주소
+EMAIL_HOST_PASSWORD = EMAIL_PWD  # 네이버 계정 비밀번호 또는 앱 비밀번호
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # 기본 발신 이메일 주소
 
 ACCOUNT_ADAPTER  = 'accounts.models.CustomAccountAdapter'
