@@ -13,7 +13,7 @@ class HelpArticle(models.Model):
 
     def __str__(self):
         return self.help_title
-    
+
 
 # 질문 게시판 좋아요
 class HelpLike(models.Model):
