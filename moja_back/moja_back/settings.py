@@ -24,6 +24,7 @@ environ.Env.read_env(env_file = os.path.join(BASE_DIR, '.env'))
 
 EMAIL = env('EMAIL') #SECEREY_KEY 값 불러오기
 EMAIL_PWD = env('EMAIL_PWD') #SECEREY_KEY 값 불러오기
+BANK_API_KEY = env('BANK_API_KEY')
 DEBUG = env('DEBUG') #DEBUG 값 불러오기
 
 # Quick-start development settings - unsuitable for production
