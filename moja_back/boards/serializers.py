@@ -8,6 +8,11 @@ class HelpArticleSerializer(serializers.ModelSerializer):
     class Meta:
         model = HelpArticle
         fields = ['id', 'user', 'help_title', 'help_content', 'help_date', 'help_delete_date']
+        read_only_fields = ['id', 'user']
+# class HelpArticleSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = HelpArticle
+#         fields = ['id', 'user', 'help_title', 'help_content', 'help_date', 'help_delete_date']
 
 
 # 질문 좋아요
