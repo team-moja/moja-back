@@ -6,4 +6,7 @@ urlpatterns = [
   path('dj-rest-auth/registration', include('dj_rest_auth.registration.urls')),
   path('detail/<int:pk>/', views.user_detail),
   path('', views.user_list),
+  # 마이페이지
+  path('profile/', views.get_user_profile),
+  path('profile/update/', views.update_profile)
 ]
