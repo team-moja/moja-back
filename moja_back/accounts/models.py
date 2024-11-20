@@ -15,6 +15,9 @@ class User(AbstractUser):
     user_monthly_expenses = models.BigIntegerField(default=0)
     user_point = models.BigIntegerField(default=0)
     rank = models.ForeignKey(UserRank, on_delete=models.CASCADE, default = 1)
+    # 마이페이지
+    profile_image = models.ImageField(upload_to='profile_images', null=True, blank=True)
+    primary_bank = models.CharField(max_length=255, null=True, blank=True)
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     def save_user(self, request, user, form, commit=True):
