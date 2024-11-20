@@ -185,3 +185,6 @@ ACCOUNT_ADAPTER  = 'accounts.models.CustomAccountAdapter'
 REST_AUTH = {
     'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
 }
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
