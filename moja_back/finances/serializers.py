@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Bank, Product, ProductOption
+from .models import Bank, Product, ProductOption, Exchange
 
 
 class BankListSerializer(serializers.ModelSerializer):
@@ -45,4 +45,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
+        fields = '__all__'
+
+class ExchangeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exchange
         fields = '__all__'

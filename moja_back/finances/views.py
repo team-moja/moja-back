@@ -13,8 +13,8 @@ from django.db.models import Count, Avg
 from django.db.models import Q, F
 from datetime import datetime
 
-from .models import Bank, Product, ProductCategory, ProductOption, UserProducts
-from .serializers import BankListSerializer, ProductListSerializer, ProductDetailSerializer
+from .models import Bank, Product, ProductCategory, ProductOption, UserProducts, Exchange
+from .serializers import BankListSerializer, ProductListSerializer, ProductDetailSerializer, ExchangeSerializer
 
 # Create your views here.
 API_KEY = settings.BANK_API_KEY
@@ -403,3 +403,26 @@ def get_top_products_by_all_users():
         })
     
     return recommended_top_products
+
+
+@api_view(['GET'])
+def get_exchange (request):
+    EXCHANGE_API_KEY = settings.EXCHANGE_API_KEY
+    response = requests.get(f'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON?authkey={EXCHANGE_API_KEY}&data=AP01').json()
+    exist_response = Exchange.objects.all()
+    
+    if response: # 가 있다면기존 데이터를 업데이트
+        if not exist_response: # 쿼리셋이 비어있다면
+                serializer = ExchangeSerializer(data=response, many=True)
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+                    return Response(serializer.data)
+        else: # exist_response가 존재한다면
+            Exchange.objects.all().delete()
+            serializer = ExchangeSerializer(data=response, many=True)     
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data)
+    # 없다면
+    serializer = ExchangeSerializer(exist_response, many=True)
+    return Response(serializer.data)
