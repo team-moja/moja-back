@@ -12,7 +12,7 @@ from rest_framework.decorators import permission_classes
 # 질문 게시판
 # 질문 게시판 글 리스트 및 생성
 @api_view(['GET', 'POST'])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def help_article_list(request):
     if request.method == 'GET':
         articles = HelpArticle.objects.all()
@@ -21,13 +21,30 @@ def help_article_list(request):
 
     elif request.method == 'POST':
         serializer = HelpArticleSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            print("유효성 검사 통과")
-            # serializer.save(user=request.user)
-            admin_user = User.objects.filter(username="admin").first()
-            serializer.save(user=admin_user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        print("유효성 검사 실패", serializer.data)
+        try:
+            if serializer.is_valid(raise_exception=True):
+                serializer.save(user=request.user)  # admin_user 대신 실제 인증된 사용자 사용
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+# def help_article_list(request):
+#     if request.method == 'GET':
+#         articles = HelpArticle.objects.all()
+#         serializer = HelpArticleSerializer(articles, many=True)
+#         return Response(serializer.data)
+
+#     elif request.method == 'POST':
+#         serializer = HelpArticleSerializer(data=request.data)
+#         if serializer.is_valid(raise_exception=True):
+#             print("유효성 검사 통과")
+#             # serializer.save(user=request.user)
+#             admin_user = User.objects.filter(username="admin").first()
+#             serializer.save(user=admin_user)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         print("유효성 검사 실패", serializer.data)
 
 
 # 질문 게시판 글 상세 조회, 수정 및 삭제
