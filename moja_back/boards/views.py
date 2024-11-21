@@ -15,7 +15,7 @@ from rest_framework.decorators import permission_classes
 @permission_classes([IsAuthenticated])
 def help_article_list(request):
     if request.method == 'GET':
-        articles = HelpArticle.objects.all()
+        articles = HelpArticle.objects.all().order_by('-help_date')
         serializer = HelpArticleSerializer(articles, many=True)
         return Response(serializer.data)
 
@@ -30,21 +30,6 @@ def help_article_list(request):
                 {'error': str(e)}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-# def help_article_list(request):
-#     if request.method == 'GET':
-#         articles = HelpArticle.objects.all()
-#         serializer = HelpArticleSerializer(articles, many=True)
-#         return Response(serializer.data)
-
-#     elif request.method == 'POST':
-#         serializer = HelpArticleSerializer(data=request.data)
-#         if serializer.is_valid(raise_exception=True):
-#             print("유효성 검사 통과")
-#             # serializer.save(user=request.user)
-#             admin_user = User.objects.filter(username="admin").first()
-#             serializer.save(user=admin_user)
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         print("유효성 검사 실패", serializer.data)
 
 
 # 질문 게시판 글 상세 조회, 수정 및 삭제
@@ -54,7 +39,15 @@ def help_article_detail(request, pk):
 
     if request.method == 'GET':
         serializer = HelpArticleSerializer(article)
-        return Response(serializer.data)
+        data = serializer.data
+        # 좋아요 수와 좋아요 상태 추가
+        data['like_count'] = HelpLike.objects.filter(help_article=article).count()
+        data['is_liked'] = HelpLike.objects.filter(
+            help_article=article,
+            user=request.user
+        ).exists()
+        return Response(data)
+        # return Response(serializer.data)
 
     elif request.method == 'PUT':
         serializer = HelpArticleSerializer(article, data=request.data)
@@ -72,18 +65,26 @@ def help_article_detail(request, pk):
 def help_like_toggle(request, pk):
     article = get_object_or_404(HelpArticle, pk=pk)
 
-    if request.method == 'POST':
-        if HelpLike.objects.filter(user=request.user, help_article=article).exists():
-            return Response({'message': '이미 좋아요를 누르셨습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+    # 현재 사용자의 좋아요 상태 확인
+    like = HelpLike.objects.filter(user=request.user, help_article=article)
+    
+    # 좋아요가 이미 있으면 삭제 (취소)
+    if like.exists():
+        like.delete()
+        like_count = HelpLike.objects.filter(help_article=article).count()
+        return Response({
+            'like_count': like_count,
+            'is_liked': False
+        }, status=status.HTTP_200_OK)
+    
+    # 좋아요가 없으면 생성
+    else:
         HelpLike.objects.create(user=request.user, help_article=article)
-        return Response({'message': '좋아요가 추가되었습니다.'}, status=status.HTTP_201_CREATED)
-
-    elif request.method == 'DELETE':
-        like = HelpLike.objects.filter(user=request.user, help_article=article).first()
-        if like:
-            like.delete()
-            return Response({'message': '좋아요가 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
-        return Response({'message': '좋아요가 존재하지 않습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+        like_count = HelpLike.objects.filter(help_article=article).count()
+        return Response({
+            'like_count': like_count,
+            'is_liked': True
+        }, status=status.HTTP_201_CREATED)
 
 
 # 댓글 리스트 및 생성
