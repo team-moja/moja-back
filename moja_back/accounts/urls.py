@@ -9,4 +9,3 @@ urlpatterns = [
   # 마이페이지
   path('profile/', views.get_user_profile),
   path('profile/update/', views.update_profile)
-]
