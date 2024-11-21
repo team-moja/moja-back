@@ -87,7 +87,6 @@ def help_like_toggle(request, pk):
         }, status=status.HTTP_201_CREATED)
 
 
-# 댓글 리스트 및 생성
 @api_view(['GET', 'POST'])
 def help_comment_list_create(request, pk=None):
     if request.method == 'GET':
@@ -97,12 +96,16 @@ def help_comment_list_create(request, pk=None):
 
     elif request.method == 'POST':
         article = get_object_or_404(HelpArticle, pk=pk)
-        serializer = HelpCommentSerializer(data=request.data)
+        data = {
+            'help_comment_content': request.data.get('help_comment_content'),
+            'user': request.user.id,
+            'help_article': article.id
+        }
+        serializer = HelpCommentSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save(user=request.user, help_article=article)
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
+        
 # 댓글 상세 조회, 수정 및 삭제
 @api_view(['GET', 'PUT', 'DELETE'])
 def help_comment_detail(request, pk):
