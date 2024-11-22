@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.account.utils import user_email, user_field, user_username
-
+from finances.models import Bank
 # Create your models here.
 # dev
 class UserRank(models.Model):
@@ -17,7 +17,7 @@ class User(AbstractUser):
     rank = models.ForeignKey(UserRank, on_delete=models.CASCADE, default = 1)
     # 마이페이지
     profile_image = models.ImageField(upload_to='profile_images', null=True, blank=True)
-    primary_bank = models.CharField(max_length=255, null=True, blank=True)
+    bank = models.ForeignKey(Bank, on_delete=models.CASCADE, null=True, blank=True)
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     def save_user(self, request, user, form, commit=True):
@@ -30,6 +30,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         user_monthly_income = data.get("user_monthly_income")
         user_monthly_expenses = data.get("user_monthly_expenses")
         nickname = data.get("nickname")
+        bank = data.get("bank")
         user_email(user, email)
         user_username(user, username)
         if first_name:
@@ -46,9 +47,16 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             user_field(user, "user_monthly_expenses", str(user_monthly_expenses))
         if "password1" in data:
             user.set_password(data["password1"])
+        if bank:
+            try:
+                bank_instance = Bank.objects.get(pk=bank)  # Bank 인스턴스 가져오기
+                user.bank = bank_instance
+            except Bank.DoesNotExist:
+                raise ValueError("Invalid bank ID")
         else:
             user.set_unusable_password()
         self.populate_username(request, user)
         if commit:
             user.save()
         return user
+    
