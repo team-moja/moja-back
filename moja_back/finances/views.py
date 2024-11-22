@@ -230,6 +230,14 @@ def savings_detail(request, pk):
 
     return Response(serializer.data)
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Product, ProductOption, UserProducts
+from .serializers import ProductDetailSerializer, ProductListSerializer
+from django.db.models import Count, Avg, Q
+from datetime import datetime
+
+
 @api_view(['POST'])
 def recommend(request):
     data = request.data
@@ -237,93 +245,58 @@ def recommend(request):
     user_birthday = data.get('user_birthday')  # 사용자의 생년월일
     user_age = calculate_age(user_birthday)  # 사용자의 나이를 계산
 
-    if category == '예금':
-        save_trm = data.get('save_trm')  # 예금 기간
-        save_money = data.get('save_money')  # 예치 금액
-        
-        # 예금 추천 로직
-        products = ProductOption.objects.filter(
-            product__product_category__product_category='예금',
-            save_trm__lte=save_trm,  # 예금 기간이 입력값보다 작거나 같음
-            product__max_limit__gte=save_money  # Product의 max_limit이 예치 금액보다 크거나 같음
-        ).filter(
-            Q(product__max_limit__isnull=True) | Q(product__max_limit__gte=save_money)
-        )
+    save_trm = data.get('save_trm')  # 입력된 저축 기간
+    save_money = data.get('save_money')  # 입력된 저축 금액
 
-    elif category == '적금':
-        save_trm = data.get('save_trm')  # 적금 기간
-        save_money = data.get('save_money')  # 매월 예치할 금액
-        
-        # 적금 추천 로직
-        products = ProductOption.objects.filter(
-            product__product_category__product_category='적금',
-            save_trm__lte=save_trm,  # 적금 기간이 입력값보다 작거나 같음
-            product__max_limit__gte=save_money  # 적금의 경우 매월 예치금액이 max_limit보다 작거나 같아야 함
-        ).filter(
-            Q(product__max_limit__isnull=True) | Q(product__max_limit__gte=save_money)
-        )
+    # 기본 상품 필터링
+    products = ProductOption.objects.filter(
+        product__product_category__product_category=category,
+        save_trm__lte=save_trm,  # 저장 기간이 입력값 이하
+        product__max_limit__gte=save_money  # 최대 가입 금액 조건 충족
+    ).filter(
+        Q(product__max_limit__isnull=True) | Q(product__max_limit__gte=save_money)
+    )
 
-    # 금리 기준 추천
+    # 1. 금리 기반 추천
     max_intr_rate_product = products.order_by('-max_intr_rate').first()
     avg_intr_rate_product = products.annotate(avg_intr_rate=Avg('intr_rate')).order_by('-avg_intr_rate').first()
     max_intr_rate_actual_product = products.order_by('-intr_rate').first()
 
-    # 1, 2, 3번 추천 항목 리스트
     recommended_products = []
 
-    # 1. 가장 높은 max_intr_rate 상품 추천 (가장 높은 max_intr_rate)
+    # 가장 높은 금리의 상품 추천
     if max_intr_rate_product:
-        recommended_products.append({
-            'product_id': max_intr_rate_product.product.pk,
-            'product_name': max_intr_rate_product.product.prdt_name,
-            'bank_name': max_intr_rate_product.product.bank.bank_name,
-            'max_intr_rate': max_intr_rate_product.max_intr_rate,
-            'save_trm': max_intr_rate_product.save_trm,
-            'type': 'max_intr_rate'
-        })
-        # 그 상품을 제외한 나머지 상품으로 추천
-        remaining_products = products.exclude(id=max_intr_rate_product.id)
+        recommended_products.append(max_intr_rate_product.product)
+        # 나머지 상품 필터링
+        products = products.exclude(id=max_intr_rate_product.id)
 
-        # 2. 평균 금리가 높은 상품 추천
-        if remaining_products.exists():
-            avg_intr_rate_product = remaining_products.annotate(avg_intr_rate=Avg('intr_rate')).order_by('-avg_intr_rate').first()
-            if avg_intr_rate_product:
-                recommended_products.append({
-                    'product_id': avg_intr_rate_product.product.pk,
-                    'product_name': avg_intr_rate_product.product.prdt_name,
-                    'bank_name': avg_intr_rate_product.product.bank.bank_name,
-                    'avg_intr_rate': avg_intr_rate_product.avg_intr_rate,
-                    'save_trm': avg_intr_rate_product.save_trm,
-                    'type': 'avg_intr_rate'
-                })
-                # 그 상품을 제외한 나머지 상품으로 추천
-                remaining_products = remaining_products.exclude(id=avg_intr_rate_product.id)
+    # 평균 금리가 높은 상품 추천
+    if avg_intr_rate_product:
+        recommended_products.append(avg_intr_rate_product.product)
+        # 나머지 상품 필터링
+        products = products.exclude(id=avg_intr_rate_product.id)
 
-        # 3. 가장 높은 intr_rate 상품 추천
-        if remaining_products.exists():
-            max_intr_rate_actual_product = remaining_products.order_by('-intr_rate').first()
-            if max_intr_rate_actual_product:
-                recommended_products.append({
-                    'product_id': max_intr_rate_actual_product.product.pk,
-                    'product_name': max_intr_rate_actual_product.product.prdt_name,
-                    'bank_name': max_intr_rate_actual_product.product.bank.bank_name,
-                    'intr_rate': max_intr_rate_actual_product.intr_rate,
-                    'save_trm': max_intr_rate_actual_product.save_trm,
-                    'type': 'intr_rate'
-                })
+    # 실제 금리가 가장 높은 상품 추천
+    if max_intr_rate_actual_product:
+        recommended_products.append(max_intr_rate_actual_product.product)
 
-    # 연령대별 추천 상품 3개 추가
+    # 2. 연령대 추천
     age_group_products = get_age_group_products(user_age)
 
-    # 전체 사용자가 가장 많이 가입한 상품 3개 추가
+    # 3. 전체 사용자가 많이 선택한 상품 추천
     top_products_by_all_users = get_top_products_by_all_users()
 
-    # 최종 추천 상품 응답 (3개씩 그룹화하여 반환)
+    # 결과를 직렬화
+    category_based_recommendations = ProductListSerializer(recommended_products, many=True).data
+    age_group_recommendations = ProductListSerializer(age_group_products, many=True).data
+    top_products_recommendations = ProductListSerializer(top_products_by_all_users, many=True).data
+
+    # 최종 추천 리스트 반환
     return Response({
         'recommended_products': {
-            'category_based_recommendations': recommended_products,
-            'age_group_recommendations': age_group_products,
-            'top_products_by_all_users': top_products_by_all_users,
+            'category_based_recommendations': category_based_recommendations,
+            'age_group_recommendations': age_group_recommendations,
+            'top_products_by_all_users': top_products_recommendations,
         }
     })
 
@@ -332,12 +305,9 @@ def calculate_age(birth_date_str):
     """
     생년월일을 받아서 나이를 계산하는 함수
     """
-    # 문자열을 datetime 객체로 변환
     birth_date = datetime.strptime(birth_date_str, "%Y-%m-%d").date()
-    
     today = datetime.today().date()  # 오늘 날짜
     age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-    
     return age
 
 
@@ -345,7 +315,6 @@ def get_age_group_products(user_age):
     """
     사용자의 나이를 기반으로 연령대에서 가장 많이 가입한 상품 3개를 추천
     """
-    # 연령대 구분 (예: 20대, 30대, 40대 등)
     if 20 <= user_age < 30:
         age_group = '20대'
     elif 30 <= user_age < 40:
@@ -357,28 +326,15 @@ def get_age_group_products(user_age):
     else:
         age_group = '기타'
 
-    # 오늘 날짜를 datetime.date 형식으로 가져오기
-    today = datetime.today().date()
-
-    # 연령대별로 가입한 상품 계산
     age_group_products = UserProducts.objects.filter(
-        user__birth_date__year__gte=today.year - (user_age + 10),  # 10년 후까지
-        user__birth_date__year__lte=today.year - (user_age - 10)   # 10년 전부터 현재까지
+        user__birth_date__year__gte=datetime.today().year - (user_age + 10),
+        user__birth_date__year__lte=datetime.today().year - (user_age - 10)
     ).values('product').annotate(Count('product')).order_by('-product__count')[:3]
 
     recommended_age_group_products = []
     for entry in age_group_products:
         product = Product.objects.get(pk=entry['product'])
-        # ProductOption에서 max_intr_rate, save_trm 값 가져오기
-        product_option = ProductOption.objects.filter(product=product).first()
-        recommended_age_group_products.append({
-            'product_id': product.pk,
-            'product_name': product.prdt_name,
-            'bank_name': product.bank.bank_name,
-            'max_intr_rate': product_option.max_intr_rate if product_option else None,
-            'save_trm': product_option.save_trm if product_option else None,
-            'type': f'age_group_{age_group}'
-        })
+        recommended_age_group_products.append(product)
 
     return recommended_age_group_products
 
@@ -388,21 +344,12 @@ def get_top_products_by_all_users():
     전체 사용자가 가장 많이 가입한 상품 3개를 추천
     """
     top_products = UserProducts.objects.values('product').annotate(Count('product')).order_by('-product__count')[:3]
-    
+
     recommended_top_products = []
     for entry in top_products:
         product = Product.objects.get(pk=entry['product'])
-        # ProductOption에서 max_intr_rate, save_trm 값 가져오기
-        product_option = ProductOption.objects.filter(product=product).first()
-        recommended_top_products.append({
-            'product_id': product.pk,
-            'product_name': product.prdt_name,
-            'bank_name': product.bank.bank_name,
-            'max_intr_rate': product_option.max_intr_rate if product_option else None,
-            'save_trm': product_option.save_trm if product_option else None,
-            'type': 'top_product_all_users'
-        })
-    
+        recommended_top_products.append(product)
+
     return recommended_top_products
 
 
