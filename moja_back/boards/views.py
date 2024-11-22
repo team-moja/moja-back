@@ -7,6 +7,7 @@ from .serializers import HelpArticleSerializer, HelpLikeSerializer, HelpCommentS
 from accounts.models import User
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
+from django.db.models import Count
 
 ################################################
 # 질문 게시판
@@ -106,7 +107,7 @@ def help_comment_list_create(request, pk=None):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
-# 댓글 상세 조회, 수정 및 삭제
+# 댓글 상세 조회, 수정 및 삭제햐
 @api_view(['GET', 'PUT', 'DELETE'])
 def help_comment_detail(request, pk):
     comment = get_object_or_404(HelpComment, pk=pk)
@@ -124,4 +125,23 @@ def help_comment_detail(request, pk):
     elif request.method == 'DELETE':
         comment.delete()
         return Response({'message': f'댓글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
+
+
+################################################
+# 메인 페이지 - HOT 게시글
+@api_view(['GET'])
+def hot_articles(request):
+    # 좋아요 수를 기준으로 상위 3개 게시글 가져오기
+    articles = HelpArticle.objects.annotate(
+        like_count=Count('helplike')
+    ).order_by('-like_count')[:3]
+    
+    serializer = HelpArticleSerializer(articles, many=True)
+    data = serializer.data
+    
+    # 각 게시글의 좋아요 수 추가
+    for article_data, article in zip(data, articles):
+        article_data['like_count'] = article.like_count
+        
+    return Response(data)
 ################################################
