@@ -451,6 +451,6 @@ def user_products(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
     elif request.method == 'DELETE':
-        user_product = UserProducts.objects.get(pk = request.data.get('user_product_id'))
+        user_product = UserProducts.objects.filter(product__id = request.data.get('product_id'))
         user_product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
