@@ -1,5 +1,7 @@
 from rest_framework import serializers
-from .models import Bank, Product, ProductOption, Exchange
+from .models import Bank, Product, ProductOption, Exchange, UserProducts
+from accounts.models import User
+
 
 
 class BankListSerializer(serializers.ModelSerializer):
@@ -51,3 +53,24 @@ class ExchangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exchange
         fields = '__all__'
+
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = '__all__'
+
+class UserProductSerializer(serializers.ModelSerializer):
+    product = ProductListSerializer()
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = UserProducts
+        fields = '__all__'
+
+class UserProductCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProducts
+        fields = '__all__'
+
