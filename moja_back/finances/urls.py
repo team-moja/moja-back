@@ -12,4 +12,5 @@ urlpatterns = [
   path('savings/detail/<int:pk>/', views.savings_detail),
   path('recommend/', views.recommend),
   path('exchange/', views.get_exchange),
+  path('user-product/', views.user_products),
 ]
