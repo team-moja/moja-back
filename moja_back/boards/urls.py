@@ -12,4 +12,7 @@ urlpatterns = [
     # 댓글
     path('help/<int:pk>/comments/', views.help_comment_list_create, name='comment_list_create'),
     path('help/comments/<int:pk>/', views.help_comment_detail, name='comment_detail'),
+
+    # 메인 페이지
+    path('hot-articles/', views.hot_articles, name='hot-articles')
 ]
