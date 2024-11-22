@@ -111,7 +111,7 @@ def help_comment_list_create(request, pk=None):
     if request.method == 'GET':
         comments = HelpComment.objects.filter(help_article_id=pk)
         serializer = HelpCommentSerializer(comments, many=True)
-
+        # 각 댓글에 작성자 id 추가
         data = serializer.data
         for comment in data:
             comment['is_author'] = comment['user'] == request.user.id
@@ -126,8 +126,11 @@ def help_comment_list_create(request, pk=None):
         }
         serializer = HelpCommentSerializer(data=data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            comment = serializer.save(user=request.user)
+            # 생성된 댓글 데이터에 is_author 필드 추가
+            response_data = serializer.data
+            response_data['is_author'] = True  # 생성한 사용자는 항상 작성자
+            return Response(response_data, status=status.HTTP_201_CREATED)
         
 # 댓글 상세 조회, 수정 및 삭제
 @api_view(['GET', 'PUT', 'DELETE'])
