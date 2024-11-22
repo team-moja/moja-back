@@ -35,22 +35,32 @@ def help_article_list(request):
 
 # 질문 게시판 글 상세 조회, 수정 및 삭제
 @api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def help_article_detail(request, pk):
     article = get_object_or_404(HelpArticle, pk=pk)
 
     if request.method == 'GET':
         serializer = HelpArticleSerializer(article)
         data = serializer.data
-        # 좋아요 수와 좋아요 상태 추가
         data['like_count'] = HelpLike.objects.filter(help_article=article).count()
         data['is_liked'] = HelpLike.objects.filter(
             help_article=article,
             user=request.user
         ).exists()
+        # 작성자 확인을 위한 플래그와 작성자 ID 추가
+        data['is_author'] = article.user.id == request.user.id
+        data['user_id'] = article.user.id
         return Response(data)
         # return Response(serializer.data)
 
-    elif request.method == 'PUT':
+    # PUT, DELETE 작성자만 가능
+    if request.user != article.user:
+        return Response(
+            {'error': '작성자만 수정/삭제할 수 있습니다.'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    if request.method == 'PUT':
         serializer = HelpArticleSerializer(article, data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -61,10 +71,18 @@ def help_article_detail(request, pk):
         return Response({'message': f'질문 {article.help_title}이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
 
-# 좋아요 추가 및 제거
+# 좋아요
 @api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
 def help_like_toggle(request, pk):
     article = get_object_or_404(HelpArticle, pk=pk)
+
+    # # 자신 게시글에는 좋아요 불가
+    # if article.user == request.user:
+    #     return Response(
+    #         {'error': '자신의 게시글에는 좋아요 할 수 없습니다.'},
+    #         status=status.HTTP_400_BAD_REQUEST
+    #     )
 
     # 현재 사용자의 좋아요 상태 확인
     like = HelpLike.objects.filter(user=request.user, help_article=article)
@@ -93,7 +111,11 @@ def help_comment_list_create(request, pk=None):
     if request.method == 'GET':
         comments = HelpComment.objects.filter(help_article_id=pk)
         serializer = HelpCommentSerializer(comments, many=True)
-        return Response(serializer.data)
+
+        data = serializer.data
+        for comment in data:
+            comment['is_author'] = comment['user'] == request.user.id
+        return Response(data)
 
     elif request.method == 'POST':
         article = get_object_or_404(HelpArticle, pk=pk)
@@ -107,7 +129,7 @@ def help_comment_list_create(request, pk=None):
             serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
-# 댓글 상세 조회, 수정 및 삭제햐
+# 댓글 상세 조회, 수정 및 삭제
 @api_view(['GET', 'PUT', 'DELETE'])
 def help_comment_detail(request, pk):
     comment = get_object_or_404(HelpComment, pk=pk)
