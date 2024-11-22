@@ -428,6 +428,7 @@ def get_exchange (request):
     serializer = ExchangeSerializer(exist_response, many=True)
     return Response(serializer.data)
 
+
 from .models import UserProducts
 from .serializers import UserProductSerializer, UserProductCreateSerializer
 from accounts.models import User
@@ -454,3 +455,4 @@ def user_products(request):
         user_product = UserProducts.objects.filter(product__id = request.data.get('product_id'))
         user_product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+

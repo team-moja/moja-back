@@ -127,7 +127,6 @@ def help_comment_detail(request, pk):
         return Response({'message': f'댓글이 삭제되었습니다.'}, status=status.HTTP_204_NO_CONTENT)
 
 
-################################################
 # 메인 페이지 - HOT 게시글
 @api_view(['GET'])
 def hot_articles(request):
@@ -143,4 +142,5 @@ def hot_articles(request):
     for article_data, article in zip(data, articles):
         article_data['like_count'] = article.like_count
         
+
     return Response(data)
