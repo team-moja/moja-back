@@ -3,6 +3,7 @@ import requests
 from pprint import pprint as pprint
 from django.shortcuts import render
 from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.decorators import permission_classes
@@ -426,3 +427,32 @@ def get_exchange (request):
     # 없다면
     serializer = ExchangeSerializer(exist_response, many=True)
     return Response(serializer.data)
+
+
+from .models import UserProducts
+from .serializers import UserProductSerializer, UserProductCreateSerializer
+from accounts.models import User
+
+@api_view(['GET','POST', 'PUT', 'DELETE'])
+def user_products(request):
+    if request.method == "GET":
+        user_id = request.query_params.get('user_id')
+        user = User.objects.get(pk=user_id)
+        user_products = UserProducts.objects.filter(user=user)
+        serializer = UserProductSerializer(user_products, many=True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        print(request.data)
+        serializer = UserProductCreateSerializer()
+        serializer = UserProductCreateSerializer(data={
+        'user': request.data.get('user_id'),
+        'product': request.data.get('product_id')
+    })
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+    elif request.method == 'DELETE':
+        user_product = UserProducts.objects.filter(product__id = request.data.get('product_id'))
+        user_product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
