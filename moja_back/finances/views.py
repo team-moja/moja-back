@@ -230,14 +230,6 @@ def savings_detail(request, pk):
 
     return Response(serializer.data)
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from .models import Product, ProductOption, UserProducts
-from .serializers import ProductDetailSerializer, ProductListSerializer
-from django.db.models import Count, Avg, Q
-from datetime import datetime
-
-
 @api_view(['POST'])
 def recommend(request):
     data = request.data
@@ -280,11 +272,28 @@ def recommend(request):
     if max_intr_rate_actual_product:
         recommended_products.append(max_intr_rate_actual_product.product)
 
+    # 중복 없이 최대 3개까지 선택
+    recommended_products = list(dict.fromkeys(recommended_products))
+    if len(recommended_products) < 3:
+        additional_products = products.exclude(product__in=[product.id for product in recommended_products])[:3 - len(recommended_products)]
+        recommended_products.extend([product.product for product in additional_products])
+    recommended_products = list(dict.fromkeys(recommended_products))[:3]
+
     # 2. 연령대 추천
     age_group_products = get_age_group_products(user_age)
+    age_group_products = [product for product in age_group_products if product not in recommended_products]
+    if len(age_group_products) < 3:
+        additional_products = ProductOption.objects.exclude(product__in=[product.id for product in recommended_products + age_group_products])[:3 - len(age_group_products)]
+        age_group_products.extend([product.product for product in additional_products])
+    age_group_products = list(dict.fromkeys(age_group_products))[:3]
 
     # 3. 전체 사용자가 많이 선택한 상품 추천
     top_products_by_all_users = get_top_products_by_all_users()
+    top_products_by_all_users = [product for product in top_products_by_all_users if product not in recommended_products and product not in age_group_products]
+    if len(top_products_by_all_users) < 3:
+        additional_products = ProductOption.objects.exclude(product__in=[product.id for product in recommended_products + age_group_products + top_products_by_all_users])[:3 - len(top_products_by_all_users)]
+        top_products_by_all_users.extend([product.product for product in additional_products])
+    top_products_by_all_users = list(dict.fromkeys(top_products_by_all_users))[:3]
 
     # 결과를 직렬화
     category_based_recommendations = ProductListSerializer(recommended_products, many=True).data
