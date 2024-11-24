@@ -46,20 +46,21 @@ def get_user_profile(request):
 def update_profile(request):
     user = request.user
     
+    # 파일
+    file_data = {}
     if 'profile_image' in request.FILES:
-        file = request.FILES['profile_image']
-        file_name = f'profile_images/{user.username}/{file.name}'
-        
-        # 기존 이미지 삭제
-        if user.profile_image:
-            default_storage.delete(user.profile_image.path)
-            
-        # 새 이미지 저장
-        path = default_storage.save(file_name, ContentFile(file.read()))
-        user.profile_image = path
-
-    serializer = UserDetailSerializer(user, data=request.data, partial=True)
+        file_data['profile_image'] = request.FILES['profile_image']
+    
+    # 일반 데이터
+    data = request.data.dict() if hasattr(request.data, 'dict') else request.data
+    if 'profile_image' in data:
+        data.pop('profile_image')
+    
+    data.update(file_data)
+    
+    serializer = UserModifySerializer(user, data=data, partial=True)
     if serializer.is_valid():
         serializer.save()
-        return Response(serializer.data)
+        response_serializer = UserDetailSerializer(user)
+        return Response(response_serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
