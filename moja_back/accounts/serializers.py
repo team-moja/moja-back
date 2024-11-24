@@ -2,6 +2,7 @@ from rest_framework import serializers
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from .models import User, UserRank
 from finances.models import Bank
+import os
 
 class CustomRegisterSerializer(RegisterSerializer):
     nickname = serializers.CharField(required=True, max_length=255)
@@ -39,9 +40,16 @@ class BankSerializer(serializers.ModelSerializer):
 class UserDetailSerializer(serializers.ModelSerializer):
     rank = UserRankSerializer()
     bank = BankSerializer()
+    profile_image = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         exclude = ['password', 'last_login', 'is_superuser', 'first_name', 'last_name', 'is_staff', 'is_active', 'groups', 'user_permissions']
+
+    def get_profile_image(self, obj):
+        if obj.profile_image:
+            return obj.profile_image.url
+        return None
 
 class UserListSerializer(serializers.ModelSerializer):
     rank = UserRankSerializer()
@@ -56,6 +64,14 @@ class UserModifySerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = '__all__'
+    def update(self, instance, validated_data):
+        # 프로필 이미지가 제출된 경우 기존 이미지 삭제
+        if 'profile_image' in validated_data and instance.profile_image:
+            # 기존 이미지 파일 삭제
+            if os.path.isfile(instance.profile_image.path):
+                os.remove(instance.profile_image.path)
+        
+        return super().update(instance, validated_data)
 
 class UserSerializerForProduct(serializers.ModelSerializer):
     class Meta:
